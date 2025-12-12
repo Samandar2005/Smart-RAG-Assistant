@@ -8,31 +8,56 @@ st.set_page_config(
     layout="wide"
 )
 
-# Backend manzili (Lokalda)
+# Backend manzili
 API_URL = "http://127.0.0.1:8000"
 
 def main():
     st.title("🤖 Smart RAG Assistant")
     st.markdown("---")
 
-    # 1. Sidebar (Chap menyu)
+    # --- SIDEBAR: Fayl yuklash va Sozlamalar ---
     with st.sidebar:
-        st.header("⚙️ Tizim holati")
-        if st.button("Backendni tekshirish"):
+        st.header("⚙️ Sozlamalar")
+        
+        # 1. Tizim holatini tekshirish
+        if st.button("Backend aloqasini tekshirish"):
             try:
-                # Backendga so'rov yuboramiz
                 response = requests.get(f"{API_URL}/")
                 if response.status_code == 200:
                     st.success("✅ Backend aloqada!")
-                    st.json(response.json())
                 else:
                     st.error(f"❌ Xatolik: {response.status_code}")
             except requests.exceptions.ConnectionError:
-                st.error("❌ Backendga ulanib bo'lmadi. Uvicorn ishlayaptimi?")
+                st.error("❌ Backendga ulanib bo'lmadi!")
 
-    # 2. Asosiy oyna
-    st.info("👈 Chap tomondagi menyu orqali tizimni boshqaring.")
-    st.write("Hozircha faqat aloqani tekshiryapmiz. Keyingi qadamlarda Chat va Upload qo'shiladi.")
+        st.markdown("---")
+        
+        # 2. Fayl yuklash qismi (YANGI QO'SHILDI)
+        st.subheader("📄 Hujjat yuklash")
+        uploaded_file = st.file_uploader("PDF fayl tanlang", type=["pdf"])
+
+        if uploaded_file is not None:
+            # Yuklash tugmasi
+            if st.button("Faylni bazaga yuklash"):
+                with st.spinner("⏳ Fayl o'qilmoqda va vektorga aylantirilmoqda..."):
+                    try:
+                        # Faylni backendga yuborish uchun tayyorlaymiz
+                        files = {"file": (uploaded_file.name, uploaded_file, "application/pdf")}
+                        
+                        # POST so'rov yuborish
+                        response = requests.post(f"{API_URL}/upload", files=files)
+                        
+                        if response.status_code == 200:
+                            st.success("✅ Muvaffaqiyatli! Hujjat bilimlar bazasiga qo'shildi.")
+                            st.json(response.json()) # API javobini ko'rsatish
+                        else:
+                            st.error(f"❌ Xatolik yuz berdi: {response.text}")
+                            
+                    except Exception as e:
+                        st.error(f"❌ Ulanishda xatolik: {e}")
+
+    # --- MAIN AREA: Hozircha bo'sh ---
+    st.info("👈 Chap tomondagi menyu orqali PDF fayl yuklang. Keyingi qadamda Chat paydo bo'ladi.")
 
 if __name__ == "__main__":
     main()
