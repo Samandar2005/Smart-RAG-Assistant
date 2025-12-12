@@ -13,51 +13,89 @@ API_URL = "http://127.0.0.1:8000"
 
 def main():
     st.title("🤖 Smart RAG Assistant")
-    st.markdown("---")
+    
+    # --- 1. SESSION STATE (Xotira) ---
+    # Agar chat tarixi mavjud bo'lmasa, bo'sh ro'yxat ochamiz
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-    # --- SIDEBAR: Fayl yuklash va Sozlamalar ---
+    # --- 2. SIDEBAR (Fayl yuklash) ---
     with st.sidebar:
         st.header("⚙️ Sozlamalar")
         
-        # 1. Tizim holatini tekshirish
-        if st.button("Backend aloqasini tekshirish"):
+        # Backend check
+        if st.button("Backendni tekshirish"):
             try:
-                response = requests.get(f"{API_URL}/")
-                if response.status_code == 200:
+                if requests.get(f"{API_URL}/").status_code == 200:
                     st.success("✅ Backend aloqada!")
                 else:
-                    st.error(f"❌ Xatolik: {response.status_code}")
-            except requests.exceptions.ConnectionError:
-                st.error("❌ Backendga ulanib bo'lmadi!")
+                    st.error("❌ Xatolik")
+            except:
+                st.error("❌ Ulanib bo'lmadi")
 
         st.markdown("---")
-        
-        # 2. Fayl yuklash qismi (YANGI QO'SHILDI)
         st.subheader("📄 Hujjat yuklash")
         uploaded_file = st.file_uploader("PDF fayl tanlang", type=["pdf"])
 
-        if uploaded_file is not None:
-            # Yuklash tugmasi
-            if st.button("Faylni bazaga yuklash"):
-                with st.spinner("⏳ Fayl o'qilmoqda va vektorga aylantirilmoqda..."):
-                    try:
-                        # Faylni backendga yuborish uchun tayyorlaymiz
-                        files = {"file": (uploaded_file.name, uploaded_file, "application/pdf")}
-                        
-                        # POST so'rov yuborish
-                        response = requests.post(f"{API_URL}/upload", files=files)
-                        
-                        if response.status_code == 200:
-                            st.success("✅ Muvaffaqiyatli! Hujjat bilimlar bazasiga qo'shildi.")
-                            st.json(response.json()) # API javobini ko'rsatish
-                        else:
-                            st.error(f"❌ Xatolik yuz berdi: {response.text}")
-                            
-                    except Exception as e:
-                        st.error(f"❌ Ulanishda xatolik: {e}")
+        if uploaded_file and st.button("Bazaga yuklash"):
+            with st.spinner("⏳ Tahlil qilinmoqda..."):
+                try:
+                    files = {"file": (uploaded_file.name, uploaded_file, "application/pdf")}
+                    res = requests.post(f"{API_URL}/upload", files=files)
+                    if res.status_code == 200:
+                        st.success("✅ Hujjat qo'shildi!")
+                    else:
+                        st.error(f"Xatolik: {res.text}")
+                except Exception as e:
+                    st.error(f"Xatolik: {e}")
 
-    # --- MAIN AREA: Hozircha bo'sh ---
-    st.info("👈 Chap tomondagi menyu orqali PDF fayl yuklang. Keyingi qadamda Chat paydo bo'ladi.")
+    # --- 3. CHAT INTERFEYSI (Asosiy qism) ---
+    
+    # A) Eski xabarlarni chiqarish (History)
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # B) Yangi xabar yozish (Input)
+    if prompt := st.chat_input("Hujjat bo'yicha savol bering..."):
+        
+        # 1. Foydalanuvchi xabarini ko'rsatish va saqlash
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # 2. AI dan javob olish
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            message_placeholder.markdown("Biroz kuting...")
+            
+            try:
+                # Backendga so'rov (POST /chat)
+                payload = {"question": prompt}
+                response = requests.post(f"{API_URL}/chat", json=payload)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    ai_answer = data.get("answer", "Javob yo'q")
+                    sources = data.get("sources", [])
+                    
+                    # Javobni chiqarish
+                    message_placeholder.markdown(ai_answer)
+                    
+                    # Agar manbalar bo'lsa, pastda chiroyli qilib ko'rsatish
+                    if sources:
+                        with st.expander("📚 Foydalanilgan manbalar (Kontekst)"):
+                            for source in sources:
+                                st.caption(source)
+                    
+                    # AI javobini tarixga saqlash
+                    st.session_state.messages.append({"role": "assistant", "content": ai_answer})
+                
+                else:
+                    message_placeholder.error(f"Server xatosi: {response.text}")
+            
+            except Exception as e:
+                message_placeholder.error(f"Ulanish xatosi: {e}")
 
 if __name__ == "__main__":
     main()
