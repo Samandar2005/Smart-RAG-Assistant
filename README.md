@@ -1,5 +1,16 @@
 # Smart RAG Assistant
 
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)
+![Groq](https://img.shields.io/badge/Groq_AI-F55036?style=for-the-badge&logo=groq&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-PgVector-336791?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+
+</div>
 A powerful Retrieval-Augmented Generation (RAG) assistant built with FastAPI, LangChain, and Groq AI. This application allows users to upload PDF documents, store them in a vector database, and interact with an AI-powered chatbot that provides context-aware responses based on the uploaded content. Features both a REST API backend and a user-friendly Streamlit web interface.
 
 ## Features
